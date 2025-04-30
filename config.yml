@@ -1,0 +1,11 @@
+feature_switches:
+  poke_back_enabled: true
+  poke_response_enabled: true
+poke_back_probability: 0.4
+poke_responses:
+- 别戳啦！
+- 哎呀，还戳呀，别闹啦！
+- 别戳我啦  你要做什么  不理你了
+- 戳你大坝！
+- 煞笔玩意，成天就知道戳戳！
+super_poke_probability: 0.2
