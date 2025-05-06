@@ -14,7 +14,7 @@ from astrbot.api.all import (
     logger,
 )
 
-@register("poke_monitor_omini", "原：长安某。改：IGCrystal", "监控戳一戳事件插件（精简版，仅 QQ 平台，次数重置优化）", "1.6.7")
+@register("poke_monitor_omini", "原：长安某。改：IGCrystal", "监控戳一戳事件插件（精简版，仅 QQ 平台，次数重置优化）", "1.7.0")
 class PokeMonitorPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -103,21 +103,36 @@ class PokeMonitorPlugin(Star):
             yield r
 
     async def _handle_poke_event(self, event: AstrMessageEvent, chat_type: str):
-        raw = event.message_obj.raw_message
-        # 仅处理 QQ 平台的戳一戳通知
-        if not (
-            raw.get('post_type') == 'notice'
-            and raw.get('notice_type') == 'notify'
-            and raw.get('sub_type') == 'poke'
-            and str(raw.get('target_id')) == str(raw.get('self_id'))
-        ):
-            return
-        sender_id = raw.get("user_id")
-        group_id = raw.get("group_id")
-        # 获取 QQ 用户名称
+        # 检查是否是QQ平台 - 直接通过类型检查而不是属性
         try:
             from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
-            assert isinstance(event, AiocqhttpMessageEvent)
+            # 如果不是QQ平台事件，直接返回
+            if not isinstance(event, AiocqhttpMessageEvent):
+                return
+                
+            # 确保有message_obj和raw_message
+            if not hasattr(event, 'message_obj') or not event.message_obj:
+                return
+                
+            if not hasattr(event.message_obj, 'raw_message'):
+                return
+                
+            raw = event.message_obj.raw_message
+            if not isinstance(raw, dict):
+                return
+                
+            # 仅处理 QQ 平台的戳一戳通知
+            if not (
+                raw.get('post_type') == 'notice'
+                and raw.get('notice_type') == 'notify'
+                and raw.get('sub_type') == 'poke'
+                and str(raw.get('target_id')) == str(raw.get('self_id'))
+            ):
+                return
+                
+            sender_id = raw.get("user_id")
+            group_id = raw.get("group_id")
+            # 获取 QQ 用户名称
             client = event.bot
             if group_id:
                 info = await client.get_group_member_info(
@@ -127,8 +142,9 @@ class PokeMonitorPlugin(Star):
                 info = await client.get_stranger_info(user_id=sender_id)
             user_name = info.get("card") or info.get("nickname") or str(sender_id)
         except Exception as e:
-            logger.warning(f"获取用户名称失败: {e}")
-            user_name = str(sender_id)
+            logger.warning(f"处理戳一戳事件失败，可能不是QQ平台: {e}")
+            return
+            
         # 更新计数
         count = self._update_and_get_poke_count(sender_id)
         prompt = self.llm_prompt_template.format(
