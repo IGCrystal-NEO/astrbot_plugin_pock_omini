@@ -1,7 +1,6 @@
 # AstrBot 戳一戳监听
 
-用了达莉娅大佬的[表情包制作](https://github.com/zhenli12138/astrbot_plugin_emojiproduction)里的api，感谢大佬分享
-
+依据长安某的“戳一戳”插件修改而来。本插件新增了调用大语言模型回复。但是也删除了表情包的制作。
 
 ## 装上插件 戳就行了 ##
 
