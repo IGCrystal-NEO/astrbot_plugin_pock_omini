@@ -1,5 +1,7 @@
 # AstrBot 戳一戳监听
 
+<img src="https://count.getloli.com/@:astrbot_plugin_pock_omini" alt=":astrbot_plugin_pock_omini" width="100%" />
+
 依据长安某的“戳一戳”插件修改而来。本插件新增了调用大语言模型回复。但是也删除了表情包的制作。
 
 ## 装上插件 戳就行了 ##
