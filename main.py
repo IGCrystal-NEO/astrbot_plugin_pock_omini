@@ -14,7 +14,7 @@ from astrbot.api.all import (
     logger,
 )
 
-@register("poke_monitor_omini", "原：长安某。改：IGCrystal", "监控戳一戳事件插件（精简版，仅 QQ 平台，次数重置优化）", "1.7.0")
+@register("poke_monitor_omini", "原：长安某。改：IGCrystal", "监控戳一戳事件插件（精简版，仅 QQ 平台，次数重置优化）", "1.7.1")
 class PokeMonitorPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
