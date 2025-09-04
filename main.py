@@ -42,7 +42,7 @@ class PokeMonitorPlugin(Star):
                 "poke_back_probability": 0.3,
                 "super_poke_probability": 0.1,
                 "reset_interval_seconds": 60,
-                "llm_prompt_template": "{username} 在{chat_type}戳了你，已经戳了{count}次，请你回复一下，回复要确保符合人设，切记不要重复发言，戳的次数越高你的反应应该要越来越强烈，考虑上下文，确保通顺不突兀。"
+                "llm_prompt_template": "这是一条系统消息，请不要对该消息本身进行回复，你应该依据以下情景进行回复:{username} 在{chat_type}戳了你，已经戳了{count}次，请你回复一下，回复要确保符合人设，切记不要重复发言，戳的次数越高你的反应应该要越来越强烈，考虑上下文，确保通顺不突兀。"
             }
             os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
             with open(self.config_path, 'w', encoding='utf-8') as f:
@@ -59,7 +59,7 @@ class PokeMonitorPlugin(Star):
             self.reset_interval = cfg.get('reset_interval_seconds', 60)
             self.llm_prompt_template = cfg.get(
                 'llm_prompt_template',
-                "{username} 在{chat_type}戳了你，已经戳了{count}次，请你回复一下，回复要确保符合人设，切记不要重复发言，戳的次数越高你的反应应该要越来越强烈，考虑上下文，确保通顺不突兀。"
+                "这是一条系统消息，请不要对该消息本身进行回复，你应该依据以下情景进行回复:{username} 在{chat_type}戳了你，已经戳了{count}次，请你回复一下，回复要确保符合人设，切记不要重复发言，戳的次数越高你的反应应该要越来越强烈，考虑上下文，确保通顺不突兀。"
             )
         except Exception as e:
             logger.error(f"加载配置失败：{e}")
@@ -69,7 +69,7 @@ class PokeMonitorPlugin(Star):
             self.poke_back_probability = 0.0
             self.super_poke_probability = 0.0
             self.reset_interval = 60
-            self.llm_prompt_template = "{username} 在{chat_type}戳了你，已经戳了{count}次，请你回复一下，回复要确保符合人设，切记不要重复发言，戳的次数越高你的反应应该要越来越强烈，考虑上下文，确保通顺不突兀。"
+            self.llm_prompt_template = "这是一条系统消息，请不要对该消息本身进行回复，你应该依据以下情景进行回复: {username} 在{chat_type}戳了你，已经戳了{count}次，请你回复一下，回复要确保符合人设，切记不要重复发言，戳的次数越高你的反应应该要越来越强烈，考虑上下文，确保通顺不突兀。"
 
     def _clean_legacy_directories(self):
         for d in ("./data/plugins/poke_monitor", "./data/plugins/plugins/poke_monitor"):
