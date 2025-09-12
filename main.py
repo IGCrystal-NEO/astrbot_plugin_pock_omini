@@ -28,7 +28,7 @@ DEFAULT_LLM_PROMPT = (
     "戳的次数越高你的反应应该要越来越强烈，考虑上下文，确保通顺不突兀。"
 )
 
-@register(PLUGIN_NAME, "原：长安某。改：IGCrystal", "监控戳一戳事件插件", "1.7.2")
+@register(PLUGIN_NAME, "原：长安某。改：IGCrystal", "监控戳一戳事件插件", "1.7.3")
 class PokeMonitorPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
