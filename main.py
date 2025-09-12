@@ -28,7 +28,7 @@ DEFAULT_LLM_PROMPT = (
     "戳的次数越高你的反应应该要越来越强烈，考虑上下文，确保通顺不突兀。"
 )
 
-@register(PLUGIN_NAME, "原：长安某。改：IGCrystal", "监控戳一戳事件插件", "1.7.2")
+@register(PLUGIN_NAME, "原：长安某。改：IGCrystal", "监控戳一戳事件插件", "1.7.3")
 class PokeMonitorPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -45,7 +45,11 @@ class PokeMonitorPlugin(Star):
 
         self._ensure_config()
         self._load_config()
-        
+
+        # 记录每个用户上次调用 LLM 的单调时间（秒）
+        # 键为 sender_id（如果你想按群区分可改为 f"{group_id}:{sender_id}"）
+        self.last_llm_time = {}
+
     def _ensure_config(self):
         cfg_path = Path(self.config_path)
 
@@ -72,6 +76,7 @@ class PokeMonitorPlugin(Star):
                 "super_poke_probability": 0.1,
                 "reset_interval_seconds": 60,
                 "llm_prompt_template": DEFAULT_LLM_PROMPT,  # 使用统一常量
+                "llm_cooldown_seconds": 5.0,  # 默认 LLM 冷却（秒）
             }
 
             tmp_path = None
@@ -115,6 +120,11 @@ class PokeMonitorPlugin(Star):
 
             # 统一回退到相同的完整提示词常量
             self.llm_prompt_template = cfg.get("llm_prompt_template", DEFAULT_LLM_PROMPT)
+            # 读取 llm 冷却配置（单位：秒）
+            try:
+                self.llm_cooldown_seconds = float(cfg.get("llm_cooldown_seconds", 5.0))
+            except Exception:
+                self.llm_cooldown_seconds = 5.0
         except FileNotFoundError:
             logger.warning("配置文件不存在，已使用内置默认值")
             self.poke_responses = []
@@ -123,6 +133,7 @@ class PokeMonitorPlugin(Star):
             self.super_poke_probability = 0.0
             self.reset_interval = 60.0
             self.llm_prompt_template = DEFAULT_LLM_PROMPT
+            self.llm_cooldown_seconds = 5.0
         except Exception as e:
             logger.error(f"加载配置失败：{e}")
             self.poke_responses = []
@@ -131,6 +142,7 @@ class PokeMonitorPlugin(Star):
             self.super_poke_probability = 0.0
             self.reset_interval = 60.0
             self.llm_prompt_template = DEFAULT_LLM_PROMPT
+            self.llm_cooldown_seconds = 5.0
 
     def _update_and_get_poke_count(self, user_id: int) -> int:
         now = time.time()
@@ -192,20 +204,38 @@ class PokeMonitorPlugin(Star):
             try:
                 cid = await self.context.conversation_manager.get_curr_conversation_id(event.unified_msg_origin)
                 conv = await self.context.conversation_manager.get_conversation(event.unified_msg_origin, cid) if cid else None
-                yield event.request_llm(
-                    prompt=prompt,
-                    func_tool_manager=self.context.get_llm_tool_manager(),
-                    session_id=cid or event.unified_msg_origin,
-                    image_urls=[],
-                    conversation=conv
-                )
+
+                # ---------- 每用户 LLM 冷却检查 ----------
+                now_monotonic = time.monotonic()
+                last = self.last_llm_time.get(sender_id, 0)
+                if now_monotonic - last < float(self.llm_cooldown_seconds):
+                    # 仍在冷却期：退而求其次，使用回退普通回复（或直接不回复）
+                    logger.info(f"[PokeMonitor] user {sender_id} 在 LLM 冷却中，剩余秒数：{self.llm_cooldown_seconds - (now_monotonic-last):.1f}")
+                    fallback = (self.poke_responses[count - 1] if count <= len(self.poke_responses) and self.poke_responses else "别戳啦！")
+                    yield event.plain_result(fallback)
+                else:
+                    # 通过冷却，记录本次调用时间并发起 LLM 请求
+                    self.last_llm_time[sender_id] = now_monotonic
+                    try:
+                        yield event.request_llm(
+                            prompt=prompt,
+                            func_tool_manager=self.context.get_llm_tool_manager(),
+                            session_id=cid or event.unified_msg_origin,
+                            image_urls=[],
+                            conversation=conv
+                        )
+                    except Exception as e:
+                        logger.error(f"LLM 调用失败：{e}")
+                        fallback = (self.poke_responses[count - 1] if count <= len(self.poke_responses) and self.poke_responses else "别戳啦！")
+                        yield event.plain_result(fallback)
+
             except Exception as e:
-                logger.error(f"LLM 调用失败：{e}")
+                logger.error(f"LLM 调用准备阶段失败：{e}")
                 fallback = (self.poke_responses[count - 1] if count <= len(self.poke_responses) and self.poke_responses else "别戳啦！")
                 yield event.plain_result(fallback)
 
         if self.feature_switches.get('poke_back_enabled', True) and random.random() < float(self.poke_back_probability):
-            times = 10 if random.random() < float(self.super_poke_probability) else 1
+            times = 5 if random.random() < float(self.super_poke_probability) else 1
             action = "喜欢戳是吧" if times > 1 else "戳回去"
             yield event.plain_result(action)
             for _ in range(times):
