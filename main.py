@@ -76,7 +76,7 @@ class PokeMonitorPlugin(Star):
                 "super_poke_probability": 0.1,
                 "reset_interval_seconds": 60,
                 "llm_prompt_template": DEFAULT_LLM_PROMPT,  # 使用统一常量
-                "llm_cooldown_seconds": 10.0,  # 默认 LLM 冷却（秒）
+                "llm_cooldown_seconds": 5.0,  # 默认 LLM 冷却（秒）
             }
 
             tmp_path = None
@@ -122,9 +122,9 @@ class PokeMonitorPlugin(Star):
             self.llm_prompt_template = cfg.get("llm_prompt_template", DEFAULT_LLM_PROMPT)
             # 读取 llm 冷却配置（单位：秒）
             try:
-                self.llm_cooldown_seconds = float(cfg.get("llm_cooldown_seconds", 10.0))
+                self.llm_cooldown_seconds = float(cfg.get("llm_cooldown_seconds", 5.0))
             except Exception:
-                self.llm_cooldown_seconds = 10.0
+                self.llm_cooldown_seconds = 5.0
         except FileNotFoundError:
             logger.warning("配置文件不存在，已使用内置默认值")
             self.poke_responses = []
@@ -133,7 +133,7 @@ class PokeMonitorPlugin(Star):
             self.super_poke_probability = 0.0
             self.reset_interval = 60.0
             self.llm_prompt_template = DEFAULT_LLM_PROMPT
-            self.llm_cooldown_seconds = 10.0
+            self.llm_cooldown_seconds = 5.0
         except Exception as e:
             logger.error(f"加载配置失败：{e}")
             self.poke_responses = []
@@ -142,7 +142,7 @@ class PokeMonitorPlugin(Star):
             self.super_poke_probability = 0.0
             self.reset_interval = 60.0
             self.llm_prompt_template = DEFAULT_LLM_PROMPT
-            self.llm_cooldown_seconds = 10.0
+            self.llm_cooldown_seconds = 5.0
 
     def _update_and_get_poke_count(self, user_id: int) -> int:
         now = time.time()
@@ -235,7 +235,7 @@ class PokeMonitorPlugin(Star):
                 yield event.plain_result(fallback)
 
         if self.feature_switches.get('poke_back_enabled', True) and random.random() < float(self.poke_back_probability):
-            times = 10 if random.random() < float(self.super_poke_probability) else 1
+            times = 5 if random.random() < float(self.super_poke_probability) else 1
             action = "喜欢戳是吧" if times > 1 else "戳回去"
             yield event.plain_result(action)
             for _ in range(times):
